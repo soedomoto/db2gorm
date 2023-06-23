@@ -7,6 +7,9 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	dataloadergen "github.com/soedomoto/db2gorm/module/dataloader"
 	"github.com/soedomoto/db2gorm/module/tools"
@@ -51,9 +54,12 @@ func ConnectDB(t DBType, dsn string) (*gorm.DB, error) {
 // =================================================================================
 
 type Databases struct {
-	Name string `yaml:"name"`
-	DSN  string `yaml:"dsn"` // consult[https://gorm.io/docs/connecting_to_the_database.html]"
-	db   *gorm.DB
+	Name       string `yaml:"name"`
+	DSN        string `yaml:"dsn"` // consult[https://gorm.io/docs/connecting_to_the_database.html]"
+	StrTables  string `yaml:"tables"`
+	ModuleName string `yaml:"module_name"`
+	OutPath    string `yaml:"out_path"`
+	db         *gorm.DB
 }
 
 func (db *Databases) info(logInfos ...string) {
@@ -150,7 +156,7 @@ func (g *generator) ConnectDb() error {
 func (g *generator) GenerateModel(d *Databases) []interface{} {
 	ggen := gen.NewGenerator(gen.Config{
 		ModelPkgPath: "",
-		OutPath:      "./simpegv2022/orm/",
+		OutPath:      filepath.Join(d.OutPath, "orm"),
 		Mode:         gen.WithDefaultQuery | gen.WithoutContext | gen.WithQueryInterface,
 
 		WithUnitTest: false,
@@ -165,9 +171,16 @@ func (g *generator) GenerateModel(d *Databases) []interface{} {
 	ggen.UseDB(d.db)
 
 	tableModels := make([]interface{}, 0)
-	tableModels = ggen.GenerateAllTable()
-	// tableModels = append(tableModels, ggen.GenerateModel("datapokok"))
-	// tableModels = append(tableModels, ggen.GenerateModel("datapendidikan"))
+
+	strTables := strings.Trim(d.StrTables, " ")
+	if strTables == "" {
+		tableModels = ggen.GenerateAllTable()
+	} else {
+		for _, t := range strings.Split(strTables, ",") {
+			tableModels = append(tableModels, ggen.GenerateModel(strings.Trim(t, " ")))
+		}
+	}
+
 	if tableModels != nil {
 		ggen.ApplyBasic(tableModels...)
 		ggen.Execute()
@@ -176,12 +189,12 @@ func (g *generator) GenerateModel(d *Databases) []interface{} {
 	return tableModels
 }
 
-func (g *generator) GenerateDataloader(tableList []interface{}) error {
+func (g *generator) GenerateDataloader(d *Databases, tableList []interface{}) error {
 	ggen := dataloadergen.NewGenerator(dataloadergen.Config{
-		OutPath:      "./simpegv2022/dataloader/",
+		OutPath:      filepath.Join(d.OutPath, "dataloader"),
 		Package:      "dataloader",
-		ModelPackage: "github.com/soedomoto/db2gorm/simpegv2022/model",
-		OrmPackage:   "github.com/soedomoto/db2gorm/simpegv2022/orm",
+		ModelPackage: path.Join(d.ModuleName, d.OutPath, "model"),
+		OrmPackage:   path.Join(d.ModuleName, d.OutPath, "orm"),
 	})
 
 	for _, t := range tableList {
@@ -207,7 +220,7 @@ func (g *generator) Generate() error {
 	for _, d := range g.config.Databases {
 		tableList := g.GenerateModel(d)
 		if tableList != nil {
-			g.GenerateDataloader(tableList)
+			g.GenerateDataloader(d, tableList)
 		}
 	}
 

@@ -1,13 +1,32 @@
 package main
 
-import v2 "github.com/soedomoto/db2gorm"
+import (
+	"flag"
+	"log"
+
+	v2 "github.com/soedomoto/db2gorm"
+)
 
 func main() {
-	gen, _ := v2.NewGeneratorFromFile("./properties.yml")
-	if gen != nil {
-		// gen.Generate()
-		// return
+	genPath := flag.String("config", "./db2gorm.yml", "is path for db2gorm.yml")
+	flag.Parse()
+	if *genPath != "" {
+		gen, err := v2.NewGeneratorFromFile(*genPath)
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
+
+		if gen != nil {
+			gen.Generate()
+			// return
+		}
 	}
+
+	// gen, _ := v2.NewGeneratorFromFile("./properties.yml")
+	// if gen != nil {
+	// 	gen.Generate()
+	// 	// return
+	// }
 
 	// test, _ := NewTesterFromFile("./properties.yml")
 	// if test != nil {
