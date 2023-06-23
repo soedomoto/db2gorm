@@ -2,7 +2,17 @@ module github.com/soedomoto/db2gorm
 
 go 1.18
 
-replace gopkg.in/urfave/cli.v2 => github.com/urfave/cli/v2 v2.14.0
+require (
+	github.com/vektah/dataloaden v0.3.0
+	golang.org/x/tools v0.10.0
+	gopkg.in/yaml.v2 v2.4.0
+	gorm.io/driver/mysql v1.5.1
+	gorm.io/driver/postgres v1.5.2
+	gorm.io/driver/sqlite v1.5.2
+	gorm.io/driver/sqlserver v1.5.1
+	gorm.io/gen v0.3.22
+	gorm.io/gorm v1.25.2-0.20230530020048-26663ab9bf55
+)
 
 require (
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
@@ -17,24 +27,12 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/microsoft/go-mssqldb v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/rogpeppe/go-internal v1.6.1 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
-	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/mod v0.11.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	gorm.io/datatypes v1.1.1-0.20230130040222-c43177d3cf8c // indirect
 	gorm.io/hints v1.1.0 // indirect
 	gorm.io/plugin/dbresolver v1.3.0 // indirect
-)
-
-require (
-	github.com/vektah/dataloaden v0.3.0
-	golang.org/x/tools v0.9.1
-	gopkg.in/yaml.v2 v2.4.0
-	gorm.io/driver/mysql v1.5.1
-	gorm.io/driver/postgres v1.5.2
-	gorm.io/driver/sqlite v1.5.2
-	gorm.io/driver/sqlserver v1.5.1
-	gorm.io/gen v0.3.22
-	gorm.io/gorm v1.25.2-0.20230530020048-26663ab9bf55
 )
