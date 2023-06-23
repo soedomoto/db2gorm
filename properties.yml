@@ -1,0 +1,4 @@
+version: 0.1
+databases:
+  - name: "SimpegV2022"
+    dsn: "sqlserver://pti-dev:Selasa116baru@DCSQLSRVDEV01.bps.go.id:1433/?database=simtes_update_aris&Encrypt=disable&TrustServerCertificate=true"
