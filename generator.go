@@ -205,7 +205,8 @@ func (g *generator) GenerateDataloader(d *Databases, tableList []interface{}) er
 		byteData, _ := json.Marshal(t)
 		json.Unmarshal(byteData, &model)
 
-		ggen.GenerateDataloader(*model)
+		StructFields := ggen.GenerateDataloader(*model)
+		ggen.GenerateDataloaderAgg(StructFields)
 	}
 
 	return nil

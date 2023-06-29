@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 
 	tpl "github.com/soedomoto/db2gorm/module/dataloader/template"
 
@@ -113,7 +114,9 @@ type Generator struct {
 	config Config
 }
 
-func (g *Generator) GenerateDataloader(m Model) {
+func (g *Generator) GenerateDataloader(m Model) [][]string {
+	StructFields := make([][]string, 0)
+
 	os.MkdirAll(g.config.OutPath, os.ModePerm)
 	empty, err := IsDirEmpty(g.config.OutPath)
 	if err == nil && empty {
@@ -142,7 +145,7 @@ func (g *Generator) GenerateDataloader(m Model) {
 
 		err = dataloadgen.Generate(m.ModelStructName+"_"+Fieldname+"Loader", Fieldtype, "*"+g.config.ModelPackage+"."+m.ModelStructName, g.config.OutPath)
 		if err != nil {
-			return
+			continue
 		}
 
 		var dataloaderBuf bytes.Buffer
@@ -157,10 +160,57 @@ func (g *Generator) GenerateDataloader(m Model) {
 
 		if renderErr == nil {
 			dataloaderBytes = append(dataloaderBytes, dataloaderBuf.Bytes()...)
+			StructFields = append(StructFields, []string{m.ModelStructName, Fieldname})
 		}
 	}
 
 	outputErr := output(fmt.Sprintf("%s/%s.gen.go", g.config.OutPath, m.TableName), dataloaderBytes)
+	if outputErr == nil {
+		return StructFields
+	}
+
+	return make([][]string, 0)
+}
+
+func (g *Generator) GenerateDataloaderAgg(StructFields [][]string) {
+	dataloaderBytes := make([]byte, 0)
+
+	var dataloaderHeaderBuf bytes.Buffer
+	renderErr := render(tpl.Header, &dataloaderHeaderBuf, map[string]interface{}{
+		"Package":        g.config.Package,
+		"ImportPkgPaths": []string{"github.com/redis/go-redis/v9", g.config.ModelPackage, g.config.OrmPackage},
+	})
+
+	if renderErr == nil {
+		dataloaderBytes = append(dataloaderBytes, dataloaderHeaderBuf.Bytes()...)
+	}
+
+	Fields := make([]string, 0)
+	Inits := make([]string, 0)
+	for _, sf := range StructFields {
+		runes := []rune(sf[0])
+		if len(runes) > 0 {
+			runes[0] = unicode.ToLower(runes[0])
+		}
+		lsf := string(runes)
+
+		Fields = append(Fields, fmt.Sprintf("%s_%sLoader *%s_%sLoader", lsf, sf[1], sf[0], sf[1]))
+		Inits = append(Inits, fmt.Sprintf("%s_%sLoader: Get%s_%sLoader(Q, redisClient),", lsf, sf[1], sf[0], sf[1]))
+	}
+
+	var dataloaderBuf bytes.Buffer
+	renderErr = render(tpl.DataloaderAgg, &dataloaderBuf, map[string]interface{}{
+		"Package":        g.config.Package,
+		"ImportPkgPaths": []string{"github.com/redis/go-redis/v9", g.config.ModelPackage, g.config.OrmPackage},
+		"StrFields":      strings.Join(Fields, "\r\n"),
+		"StrInits":       strings.Join(Inits, "\r\n"),
+	})
+
+	if renderErr == nil {
+		dataloaderBytes = append(dataloaderBytes, dataloaderBuf.Bytes()...)
+	}
+
+	outputErr := output(fmt.Sprintf("%s/gen.go", g.config.OutPath), dataloaderBytes)
 	if outputErr != nil {
 
 	}

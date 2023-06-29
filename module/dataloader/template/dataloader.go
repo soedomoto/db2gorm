@@ -65,3 +65,16 @@ func Get{{.ModelStructName}}_{{.FieldName}}Loader(Q *orm.Query, redisClient *red
 }
 
 `
+
+const DataloaderAgg = `
+type dataloader struct {
+	{{.StrFields}}
+}
+
+func NewDataloader(Q *orm.Query, redisClient *redis.Client) *dataloader {
+	return &dataloader{
+		{{.StrInits}}
+	}
+}
+
+`
