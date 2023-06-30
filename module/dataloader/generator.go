@@ -9,7 +9,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"unicode"
 
 	tpl "github.com/soedomoto/db2gorm/module/dataloader/template"
 
@@ -188,14 +187,8 @@ func (g *Generator) GenerateDataloaderAgg(StructFields [][]string) {
 	Fields := make([]string, 0)
 	Inits := make([]string, 0)
 	for _, sf := range StructFields {
-		runes := []rune(sf[0])
-		if len(runes) > 0 {
-			runes[0] = unicode.ToLower(runes[0])
-		}
-		lsf := string(runes)
-
-		Fields = append(Fields, fmt.Sprintf("%s_%sLoader *%s_%sLoader", lsf, sf[1], sf[0], sf[1]))
-		Inits = append(Inits, fmt.Sprintf("%s_%sLoader= Get%s_%sLoader(Q, redisClient)", lsf, sf[1], sf[0], sf[1]))
+		Fields = append(Fields, fmt.Sprintf("G_%s_%sLoader *%s_%sLoader", sf[0], sf[1], sf[0], sf[1]))
+		Inits = append(Inits, fmt.Sprintf("G_%s_%sLoader= Get%s_%sLoader(Q, redisClient)", sf[0], sf[1], sf[0], sf[1]))
 	}
 
 	var dataloaderBuf bytes.Buffer
