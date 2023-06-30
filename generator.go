@@ -197,6 +197,7 @@ func (g *generator) GenerateDataloader(d *Databases, tableList []interface{}) er
 		OrmPackage:   path.Join(d.ModuleName, d.OutPath, "orm"),
 	})
 
+	StructFields := make([][]string, 0)
 	for _, t := range tableList {
 		if t != nil {
 		}
@@ -205,9 +206,11 @@ func (g *generator) GenerateDataloader(d *Databases, tableList []interface{}) er
 		byteData, _ := json.Marshal(t)
 		json.Unmarshal(byteData, &model)
 
-		StructFields := ggen.GenerateDataloader(*model)
-		ggen.GenerateDataloaderAgg(StructFields)
+		SFs := ggen.GenerateDataloader(*model)
+		StructFields = append(StructFields, SFs...)
 	}
+
+	ggen.GenerateDataloaderAgg(StructFields)
 
 	return nil
 }
