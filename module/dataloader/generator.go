@@ -195,7 +195,7 @@ func (g *Generator) GenerateDataloaderAgg(StructFields [][]string) {
 		lsf := string(runes)
 
 		Fields = append(Fields, fmt.Sprintf("%s_%sLoader *%s_%sLoader", lsf, sf[1], sf[0], sf[1]))
-		Inits = append(Inits, fmt.Sprintf("%s_%sLoader: Get%s_%sLoader(Q, redisClient),", lsf, sf[1], sf[0], sf[1]))
+		Inits = append(Inits, fmt.Sprintf("%s_%sLoader= Get%s_%sLoader(Q, redisClient)", lsf, sf[1], sf[0], sf[1]))
 	}
 
 	var dataloaderBuf bytes.Buffer
