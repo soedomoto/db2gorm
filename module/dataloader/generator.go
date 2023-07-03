@@ -141,20 +141,33 @@ func (g *Generator) GenerateDataloader(m Model) [][]string {
 		if strings.Contains(f.Type, "*") {
 			Asterisk = "*"
 		}
+		IsPk := strings.Contains(f.GORMTag.Build(), "primaryKey")
 
-		err = dataloadgen.Generate(m.ModelStructName+"_"+Fieldname+"Loader", Fieldtype, "*"+g.config.ModelPackage+"."+m.ModelStructName, g.config.OutPath)
+		err := fmt.Errorf("")
+		if IsPk {
+			err = dataloadgen.Generate(m.ModelStructName+"_"+Fieldname+"Loader", Fieldtype, "*"+g.config.ModelPackage+"."+m.ModelStructName, g.config.OutPath)
+		} else {
+			err = dataloadgen.Generate(m.ModelStructName+"_"+Fieldname+"Loader", Fieldtype, "[]*"+g.config.ModelPackage+"."+m.ModelStructName, g.config.OutPath)
+		}
+
 		if err != nil {
 			continue
 		}
 
+		template := tpl.DataloaderNpk
+		if IsPk {
+			template = tpl.DataloaderPk
+		}
+
 		var dataloaderBuf bytes.Buffer
-		renderErr := render(tpl.Dataloader, &dataloaderBuf, map[string]interface{}{
+		renderErr := render(template, &dataloaderBuf, map[string]interface{}{
 			"Package":         g.config.Package,
 			"ImportPkgPaths":  []string{"github.com/redis/go-redis/v9", g.config.ModelPackage, g.config.OrmPackage},
 			"ModelStructName": m.ModelStructName,
 			"FieldName":       Fieldname,
 			"Fieldtype":       Fieldtype,
 			"Asterisk":        Asterisk,
+			"IsPk":            IsPk,
 		})
 
 		if renderErr == nil {
