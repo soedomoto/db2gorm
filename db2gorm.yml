@@ -2,6 +2,9 @@ version: 0.1
 databases:
   - name: "SimpegV2022"
     dsn: "sqlserver://username:password@host:1433/?database=database&Encrypt=disable&TrustServerCertificate=true"
-    tables: "datapokok" # blank means ALL, use comma separated
-    module_name: "github.com/soedomoto/db2gorm" 
-    out_path: "simpegv2022"
+    tables: "" # blank means ALL, use comma separated
+    module_name: "github.com/soedomoto/db2gorm"
+    out_path: "dbalias"
+    dataloader: true
+    dataloader_pk_only: true
+    dataloader_use_redis: false

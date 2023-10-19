@@ -10,6 +10,7 @@ func Get{{.ModelStructName}}_{{.FieldName}}Loader(Q *orm.Query, redisClient *red
 			data := make([]*model.{{.ModelStructName}}, len(keys))
 			errs := make([]error, len(keys))
 
+			{{if .UseRedis}}
 			for i, key := range keys {
 				strKey, _ := json.Marshal(key)
 				strRec, err := redisClient.Get(context.Background(), fmt.Sprintf("%s_%s_%s", "{{.ModelStructName}}", "{{.FieldName}}", string(strKey))).Result()
@@ -29,6 +30,9 @@ func Get{{.ModelStructName}}_{{.FieldName}}Loader(Q *orm.Query, redisClient *red
 
 				data[i] = rec
 			}
+			{{else}}
+			resKeys = keys
+			{{end}}
 
 			recs := make([]*model.{{.ModelStructName}}, 0)
 			var err error
@@ -49,12 +53,14 @@ func Get{{.ModelStructName}}_{{.FieldName}}Loader(Q *orm.Query, redisClient *red
 					if key == {{.Asterisk}}rec.{{.FieldName}} {
 						data[i] = rec
 
+						{{if .UseRedis}}
 						strKey, _ := json.Marshal(key)
 						strRec, _ := json.Marshal(rec)
 						err := redisClient.Set(context.Background(), fmt.Sprintf("%s_%s_%s", "{{.ModelStructName}}", "{{.FieldName}}", string(strKey)), string(strRec), 30 * time.Second).Err()
 						if err != nil {
 
 						}
+						{{end}}
 					}
 				}
 			}
@@ -76,6 +82,7 @@ func Get{{.ModelStructName}}_{{.FieldName}}Loader(Q *orm.Query, redisClient *red
 			data := make([][]*model.{{.ModelStructName}}, len(keys))
 			errs := make([]error, len(keys))
 
+			{{if .UseRedis}}
 			for i, key := range keys {
 				strKey, _ := json.Marshal(key)
 				strRec, err := redisClient.Get(context.Background(), fmt.Sprintf("%s_%s_%s", "{{.ModelStructName}}", "{{.FieldName}}", string(strKey))).Result()
@@ -95,6 +102,9 @@ func Get{{.ModelStructName}}_{{.FieldName}}Loader(Q *orm.Query, redisClient *red
 
 				data[i] = append(data[i], recs...)
 			}
+			{{else}}
+			resKeys = keys
+			{{end}}
 
 			recs := make([]*model.{{.ModelStructName}}, 0)
 			var err error
@@ -117,12 +127,14 @@ func Get{{.ModelStructName}}_{{.FieldName}}Loader(Q *orm.Query, redisClient *red
 					}
 				}
 
+				{{if .UseRedis}}
 				strKey, _ := json.Marshal(key)
 				strRec, _ := json.Marshal(data[i])
 				err := redisClient.Set(context.Background(), fmt.Sprintf("%s_%s_%s", "Datacatatan", "Tglcatatan", string(strKey)), string(strRec), 30*time.Second).Err()
 				if err != nil {
 
 				}
+				{{end}}
 			}
 
 			return data, nil

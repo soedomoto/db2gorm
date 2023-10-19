@@ -1,10 +1,8 @@
 package v2
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"path"
@@ -12,7 +10,7 @@ import (
 	"strings"
 
 	dataloadergen "github.com/soedomoto/db2gorm/module/dataloader"
-	"github.com/soedomoto/db2gorm/module/tools"
+	"github.com/soedomoto/db2gorm/properties"
 
 	"gopkg.in/yaml.v2"
 	"gorm.io/driver/mysql"
@@ -53,34 +51,13 @@ func ConnectDB(t DBType, dsn string) (*gorm.DB, error) {
 
 // =================================================================================
 
-type Databases struct {
-	Name       string `yaml:"name"`
-	DSN        string `yaml:"dsn"` // consult[https://gorm.io/docs/connecting_to_the_database.html]"
-	StrTables  string `yaml:"tables"`
-	ModuleName string `yaml:"module_name"`
-	OutPath    string `yaml:"out_path"`
-	db         *gorm.DB
-}
-
-func (db *Databases) info(logInfos ...string) {
-	for _, l := range logInfos {
-		db.db.Logger.Info(context.Background(), l)
-		log.Println(l)
-	}
-}
-
-type YamlProperties struct {
-	Version   string       `yaml:"version"`   //
-	Databases []*Databases `yaml:"databases"` //
-}
-
-func LoadConfigFile(path string) (*YamlProperties, error) {
+func LoadConfigFile(path string) (*properties.YamlProperties, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close() // nolint
-	var props YamlProperties
+	var props properties.YamlProperties
 	if cmdErr := yaml.NewDecoder(file).Decode(&props); cmdErr != nil {
 		return nil, cmdErr
 	}
@@ -132,7 +109,7 @@ func (t *migrator) GetTableIndex(tableName string) (indexes []gorm.Index, err er
 // =================================================================================
 
 type generator struct {
-	config *YamlProperties
+	config *properties.YamlProperties
 }
 
 func (g *generator) ConnectDb() error {
@@ -147,13 +124,13 @@ func (g *generator) ConnectDb() error {
 			return err
 		}
 
-		d.db = db
+		d.Db = db
 	}
 
 	return nil
 }
 
-func (g *generator) GenerateModel(d *Databases) []interface{} {
+func (g *generator) GenerateModel(d *properties.Databases) []interface{} {
 	ggen := gen.NewGenerator(gen.Config{
 		ModelPkgPath: "",
 		OutPath:      filepath.Join(d.OutPath, "orm"),
@@ -168,7 +145,7 @@ func (g *generator) GenerateModel(d *Databases) []interface{} {
 		FieldSignable:     false,
 	})
 
-	ggen.UseDB(d.db)
+	ggen.UseDB(d.Db)
 
 	tableModels := make([]interface{}, 0)
 
@@ -189,7 +166,7 @@ func (g *generator) GenerateModel(d *Databases) []interface{} {
 	return tableModels
 }
 
-func (g *generator) GenerateDataloader(d *Databases, tableList []interface{}) error {
+func (g *generator) GenerateDataloader(d *properties.Databases, tableList []interface{}) error {
 	ggen := dataloadergen.NewGenerator(dataloadergen.Config{
 		OutPath:      filepath.Join(d.OutPath, "dataloader"),
 		Package:      "dataloader",
@@ -206,7 +183,7 @@ func (g *generator) GenerateDataloader(d *Databases, tableList []interface{}) er
 		byteData, _ := json.Marshal(t)
 		json.Unmarshal(byteData, &model)
 
-		SFs := ggen.GenerateDataloader(*model)
+		SFs := ggen.GenerateDataloader(d, *model)
 		StructFields = append(StructFields, SFs...)
 	}
 
@@ -223,17 +200,17 @@ func (g *generator) Generate() error {
 
 	for _, d := range g.config.Databases {
 		tableList := g.GenerateModel(d)
-		if tableList != nil {
+		if tableList != nil && d.Dataloader {
 			g.GenerateDataloader(d, tableList)
 		}
 	}
 
-	tools.Tidy()
+	// tools.Tidy()
 
 	return nil
 }
 
-func NewGenerator(config *YamlProperties) *generator {
+func NewGenerator(config *properties.YamlProperties) *generator {
 	return &generator{config}
 }
 
@@ -249,7 +226,7 @@ func NewGeneratorFromFile(yaml string) (*generator, error) {
 // =================================================================================
 
 type tester struct {
-	config *YamlProperties
+	config *properties.YamlProperties
 }
 
 func (g *tester) ConnectDb() error {
@@ -264,7 +241,7 @@ func (g *tester) ConnectDb() error {
 			return err
 		}
 
-		d.db = db
+		d.Db = db
 	}
 
 	return nil

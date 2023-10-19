@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	tpl "github.com/soedomoto/db2gorm/module/dataloader/template"
+	"github.com/soedomoto/db2gorm/properties"
 
 	dataloadgen "github.com/vektah/dataloaden/pkg/generator"
 	"golang.org/x/tools/imports"
@@ -113,7 +114,7 @@ type Generator struct {
 	config Config
 }
 
-func (g *Generator) GenerateDataloader(m Model) [][]string {
+func (g *Generator) GenerateDataloader(d *properties.Databases, m Model) [][]string {
 	StructFields := make([][]string, 0)
 
 	os.MkdirAll(g.config.OutPath, os.ModePerm)
@@ -123,11 +124,12 @@ func (g *Generator) GenerateDataloader(m Model) [][]string {
 	}
 
 	dataloaderBytes := make([]byte, 0)
+	importPkgPaths := []string{"github.com/redis/go-redis/v9", g.config.ModelPackage, g.config.OrmPackage}
 
 	var dataloaderBuf bytes.Buffer
 	renderErr := render(tpl.Header, &dataloaderBuf, map[string]interface{}{
 		"Package":        g.config.Package,
-		"ImportPkgPaths": []string{"github.com/redis/go-redis/v9", g.config.ModelPackage, g.config.OrmPackage},
+		"ImportPkgPaths": importPkgPaths,
 	})
 
 	if renderErr == nil {
@@ -142,6 +144,10 @@ func (g *Generator) GenerateDataloader(m Model) [][]string {
 			Asterisk = "*"
 		}
 		IsPk := strings.Contains(f.GORMTag.Build(), "primaryKey")
+
+		if d.DataloaderPkOnly && !IsPk {
+			continue
+		}
 
 		err := fmt.Errorf("")
 		if IsPk {
@@ -162,12 +168,13 @@ func (g *Generator) GenerateDataloader(m Model) [][]string {
 		var dataloaderBuf bytes.Buffer
 		renderErr := render(template, &dataloaderBuf, map[string]interface{}{
 			"Package":         g.config.Package,
-			"ImportPkgPaths":  []string{"github.com/redis/go-redis/v9", g.config.ModelPackage, g.config.OrmPackage},
+			"ImportPkgPaths":  importPkgPaths,
 			"ModelStructName": m.ModelStructName,
 			"FieldName":       Fieldname,
 			"Fieldtype":       Fieldtype,
 			"Asterisk":        Asterisk,
 			"IsPk":            IsPk,
+			"UseRedis":        d.DataloaderUseRedis,
 		})
 
 		if renderErr == nil {
